@@ -1,0 +1,82 @@
+[
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 144/2 (13.2/20 ov)\nRR: 10.8 | Req: 0\nPartnership: 51 Runs, 16 B (RR: 19.12)\nBatting: RM Patidar 23(8), D Padikkal 43(24)\nBowling: MJ Henry 2.2-0-0, S Dube 2-0-1\nVisual Momentum: 1, 6, 4, 4, 6, 1\nPulse (Latest): Henry to Patidar \u2014 slower bumper on off. Patidar hangs back before hacking it to deep mid wicket\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: Karya Karya"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 147/2 (13.3/20 ov)\nRR: 10.88 | Req: 0\nPartnership: 54 Runs, 17 B (RR: 19.05)\nBatting: D Padikkal 45(25), RM Patidar 23(8)\nBowling: MJ Henry 2.3-0-0, S Dube 2-0-1\nVisual Momentum: 4, 4, 6, 1, 2, 1w\nPulse (Latest): Henry to Padikkal \u2014 dug into the track on leg. Padikkal gets under it and the square leg umpire calls it a wide on height\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: dhanatmak"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 147/2 (13.3/20 ov)\nRR: 10.88 | Req: 0\nPartnership: 54 Runs, 17 B (RR: 19.05)\nBatting: D Padikkal 45(25), RM Patidar 23(8)\nBowling: MJ Henry 2.3-0-0, S Dube 2-0-1\nVisual Momentum: 4, 4, 6, 1, 2, 1w\nPulse (Latest): Henry to Padikkal \u2014 dug into the track on leg. Padikkal gets under it and the square leg umpire calls it a wide on height. But hang on. CSK have reviewed it.\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: prakriya ko"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 77/3 (6/20, T:251 ov)\nRR: 12.83 | Req: 12.42\nPartnership: 47 Runs, 20 B (RR: 14.84)\nBatting: SN Khan 50(24), Kartik Sharma 6(2)\nBowling: Abhinandan Singh 1-0-0, JA Duffy 3-0-2\nVisual Momentum: \u2022, 2, 4, 4, 2, 1\nPulse (Latest): Abhinandan Singh to Sarfaraz Khan \u2014 fifty up for Sarfaraz, and this has been a sparkling knock! Slower ball on a back of a length outside off. Sarfaraz tugs it to deep mid wicket and brings up his milestone off 24 balls. Raises his bat to acknowledge the CSK support, but he knows the job is far from done!\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: Kabhi Apni Jagah"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 77/3 (6/20, T:251 ov)\nRR: 12.83 | Req: 12.42\nPartnership: 47 Runs, 20 B (RR: 14.84)\nBatting: SN Khan 50(24), Kartik Sharma 6(2)\nBowling: Abhinandan Singh 1-0-0, JA Duffy 3-0-2\nVisual Momentum: \u2022, 2, 4, 4, 2, 1\nPulse (Latest): Abhinandan Singh to Sarfaraz Khan \u2014 fifty up for Sarfaraz, and this has been a sparkling knock! Slower ball on a back of a length outside off. Sarfaraz tugs it to deep mid wicket and brings up his milestone off 24 balls. Raises his bat to acknowledge the CSK support, but he knows the job is far from done!\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: yah wala Mere"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 84/4 (6.4/20, T:251 ov)\nRR: 12.6 | Req: 12.52\nPartnership: 7 Runs, 3 B (RR: 14)\nBatting: S Dube 7(3), Kartik Sharma 6(2)\nBowling: KH Pandya 0.4-0-1, Abhinandan Singh 1-0-0\nVisual Momentum: 2, 1, W, 6, \u2022, 1\nPulse (Latest): Krunal to Dube\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: Gaon"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 85/5 (7.1/20, T:251 ov)\nRR: 11.86 | Req: 12.93\nPartnership: 1 Run, 2 B (RR: 3)\nBatting: S Dube 8(4), PR Veer 0(1)\nBowling: Abhinandan Singh 1.1-0-0, KH Pandya 1-0-2\nVisual Momentum: 6, \u2022, 1, W, \u2022, 1\nPulse (Latest): Abhinandan Singh to Dube\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: compulsory book"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 89/5 (7.2/20, T:251 ov)\nRR: 12.13 | Req: 12.78\nPartnership: 5 Runs, 3 B (RR: 10)\nBatting: PR Veer 4(2), S Dube 8(4)\nBowling: Abhinandan Singh 1.2-0-0, KH Pandya 1-0-2\nVisual Momentum: \u2022, 1, W, \u2022, 1, 4\nPulse (Latest): Abhinandan Singh to Veer\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: abhi English kar denge"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "YouTube"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "nexora"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  }
+]

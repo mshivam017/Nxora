@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NxoraAI - Neural Assistant</title>
+    <!-- Premium Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <style>
+        :root {
+            /* Cinematic Ultra-Dark Theme */
+            --bg-dark: #030504;
+            --bg-darker: rgba(3, 5, 4, 0.75);
+            --bg-grad: radial-gradient(ellipse at center 20%, #0a1f11 0%, #030504 70%);
+            
+            /* Emerald Glows */
+            --green: #10b981;
+            --green-glow: rgba(16, 185, 129, 0.4);
+            --glow-color: rgba(16, 185, 129, 0.15);
+            --ring-color: rgba(16, 185, 129, 0.6);
+            
+            /* Typography */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Glassmorphism Surfaces */
+            --border-color: rgba(255, 255, 255, 0.05);
+            --border-color-strong: rgba(255, 255, 255, 0.1);
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            
+            /* Chat Elements */
+            --msg-ai-bg: rgba(16, 185, 129, 0.05);
+            --msg-user-bg: rgba(255, 255, 255, 0.04);
+            --msg-ai-border: rgba(16, 185, 129, 0.2);
+            --msg-user-border: rgba(255, 255, 255, 0.08);
+            
+            /* Input Area */
+            --input-area-bg: rgba(3, 5, 4, 0.95);
+            --input-wrap-bg: rgba(255, 255, 255, 0.05);
+            
+            /* Shadows & Depth */
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            
+            /* Code Blocks */
+            --code-header-bg: #0d1117;
+            --code-bg: #010409;
+        }
+
+        .light-theme {
+            /* Pristine Light Theme */
+            --bg-dark: #f8fafc;
+            --bg-darker: rgba(255, 255, 255, 0.85);
+            --bg-grad: radial-gradient(ellipse at center 20%, #e0f2fe 0%, #f8fafc 70%);
+            
+            --green: #059669;
+            --green-glow: rgba(5, 150, 105, 0.2);
+            --glow-color: rgba(5, 150, 105, 0.1);
+            --ring-color: rgba(5, 150, 105, 0.8);
+            
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            
+            --border-color: rgba(0, 0, 0, 0.08);
+            --border-color-strong: rgba(0, 0, 0, 0.15);
+            --surface: rgba(255, 255, 255, 0.7);
+            --surface-hover: rgba(0, 0, 0, 0.04);
+            
+            --msg-ai-bg: #ffffff;
+            --msg-user-bg: #f1f5f9;
+            --msg-ai-border: rgba(5, 150, 105, 0.3);
+            --msg-user-border: rgba(0, 0, 0, 0.08);
+            
+            --input-area-bg: rgba(248, 250, 252, 0.95);
+            --input-wrap-bg: #ffffff;
+            
+            --shadow-sm: 0 2px 10px rgba(148, 163, 184, 0.15);
+            --shadow-md: 0 8px 30px rgba(148, 163, 184, 0.2);
+            --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            
+            --code-header-bg: #f1f5f9;
+            --code-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            overflow: hidden;
+            
+        }
+
+        /* ─── CUSTOM SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--green); }
+
+        /* ─── APP LAYOUT ─── */
+        .app-container { display: flex; width: 100%; height: 100%; }
+
+        /* ─── SIDEBARS ─── */
+        .sidebar, .sidebar-right {
+            transform: translateZ(0);
+            background: var(--bg-darker);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 20;
+            transition: all 0.4s ease;
+        }
+
+        .sidebar {
+            width: 380px;
+            border-right: 1px solid var(--border-color);
+            padding: 30px 0 0 0;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── SYSTEM VITALS WIDGET ─── */
+        .vitals-dashboard {
+            margin: 0 20px 20px 20px;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border-color-strong);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            transform: translateZ(0);
+        }
+
+        .vitals-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .vital-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .vital-row:last-child { margin-bottom: 0; }
+
+        .vital-label { color: var(--text-main); }
+        .vital-val   { color: var(--green); font-weight: 500;}
+
+        .vital-bar-bg {
+            height: 4px;
+            background: var(--input-wrap-bg);
+            border-radius: 2px;
+            margin-top: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .vital-bar-fill {
+            height: 100%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green-glow);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-right {
+            width: 260px;
+            border-left: 1px solid var(--border-color);
+            padding: 36px 24px;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.2);
+        }
+
+        .sb-brand {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 16px;
+            padding-left: 28px;
+            letter-spacing: -0.8px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .sb-brand span { color: var(--green); }
+
+        /* Shortcuts (Right Sidebar) */
+        .sb-history-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .shortcut-group { display: flex; flex-direction: column; gap: 12px; }
+
+        .shortcut-btn {
+            transform: translateZ(0);
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 16px 18px;
+            border-radius: 14px;
+            font-size: 13.5px;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: left;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .shortcut-btn:hover {
+            background: var(--surface-hover);
+            border-color: var(--green);
+            color: var(--text-main);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md), 0 0 15px var(--glow-color);
+        }
+
+        .shortcut-btn:active { transform: translateY(1px); }
+
+        .shortcut-btn i {
+            color: var(--green);
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .shortcut-btn:hover i { transform: scale(1.1); }
+
+        /* ─── CRICKET SCOREBOARD WIDGET ─── */
+        .cricket-widget {
+            transform: translateZ(0);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 24px;
+            color: #f8fafc;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            display: none;
+        }
+
+        .cricket-widget.active {
+            display: block;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .cw-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
+        }
+
+        .cw-header i { animation: pulseListen 1.5s infinite alternate; }
+
+        .cw-body {
+            font-size: 14.5px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+
+        /* ─── MAIN CONTENT ─── */
+        .main-content {
+            flex: 1;
+            position: relative;
+            background: var(--bg-grad);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* =========================================
+           VOICE VIEW (The green energy UI)
+        ========================================= */
+        .voice-center-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 10px;
+            z-index: 10;
+            padding: 0 40px;
+        }
+
+        .header-sub {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 600;
+            color: var(--green);
+            margin-bottom: 16px;
+            opacity: 0.9;
+        }
+
+        .header-main {
+            font-size: 46px;
+            font-weight: 300;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            color: var(--text-main);
+        }
+        
+        .header-main b {
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--green), #38bdf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .core-container {
+            position: relative;
+            width: 420px;
+            height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .ring {
+            transform: translateZ(0);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--ring-color);
+            border-right-color: rgba(255,255,255,0.05);
+            box-shadow: 0 0 30px var(--glow-color), inset 0 0 20px var(--glow-color);
+            
+            
+            transition: all 0.4s ease;
+        }
+        
+        .light-theme .ring { mix-blend-mode: normal; }
+
+        .ring:nth-child(1) { transform: rotateX(60deg) rotateY(0deg); animation: spin1 12s linear infinite; }
+        .ring:nth-child(2) { transform: rotateX(60deg) rotateY(60deg); animation: spin2 14s linear infinite; }
+        .ring:nth-child(3) { transform: rotateX(60deg) rotateY(120deg); animation: spin3 10s linear infinite; }
+        .ring:nth-child(4) { transform: rotateX(70deg) rotateY(30deg); animation: spin4 15s linear infinite; border-top-color: var(--ring-color); opacity: 0.8; }
+        .ring:nth-child(5) { transform: rotateX(70deg) rotateY(90deg); animation: spin5 11s linear infinite; border-top-color: var(--ring-color); }
+
+        @keyframes spin1 { 100% { transform: rotateX(60deg) rotateY(0deg) rotateZ(360deg); } }
+        @keyframes spin2 { 100% { transform: rotateX(60deg) rotateY(60deg) rotateZ(360deg); } }
+        @keyframes spin3 { 100% { transform: rotateX(60deg) rotateY(120deg) rotateZ(360deg); } }
+        @keyframes spin4 { 100% { transform: rotateX(70deg) rotateY(30deg) rotateZ(360deg); } }
+        @keyframes spin5 { 100% { transform: rotateX(70deg) rotateY(90deg) rotateZ(360deg); } }
+
+        .core-glow {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            background: radial-gradient(circle, var(--glow-color) 0%, transparent 65%);
+            border-radius: 50%;
+            z-index: -1;
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.25); opacity: 1; }
+        }
+
+        /* Voice Controls inside the core area */
+        .controls-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            z-index: 10;
+            margin-top: -30px;
+        }
+
+        .btn-circle {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border-color-strong);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-circle:hover {
+            background: var(--surface-hover);
+            transform: scale(1.1);
+            border-color: var(--text-main);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-circle:active { transform: scale(0.95); }
+
+        .btn-mic-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-mic {
+            width: 80px;
+            height: 80px;
+            font-size: 28px;
+            border: 2px solid var(--green);
+            background: var(--input-area-bg);
+            color: var(--green);
+            z-index: 2;
+        }
+
+        .btn-mic.active { color: #fff; border-color: #fff; background: var(--green); }
+        .btn-mic:hover { background: var(--glow-color); }
+
+        .mic-aura {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--green-glow) 20%, transparent 60%);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .listening .mic-aura {
+            opacity: 1;
+            animation: auraPulse 1.2s infinite alternate;
+        }
+
+        @keyframes auraPulse {
+            0% { transform: scale(1); filter: blur(4px); }
+            100% { transform: scale(1.2); filter: blur(8px); }
+        }
+
+        .listening .btn-mic {
+            background: var(--green);
+            box-shadow: 0 0 30px var(--green-glow);
+            border-color: var(--green);
+            color: #ffffff;
+        }
+
+        .listening .core-glow {
+            background: radial-gradient(circle, var(--green-glow) 0%, transparent 70%);
+            animation: pulseListen 0.8s infinite alternate;
+        }
+
+        @keyframes pulseListen {
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1.35); }
+        }
+
+        .processing .ring {
+            animation-duration: 3s !important;
+            border-top-color: rgba(245, 158, 11, 0.8) !important; /* Amber */
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.3), inset 0 0 30px rgba(245, 158, 11, 0.2) !important;
+        }
+
+        .processing .core-glow {
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 65%);
+        }
+
+        .transcript-box {
+            margin-top: 32px;
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            font-size: 17px;
+            color: var(--text-muted);
+            font-style: italic;
+            font-weight: 300;
+            min-height: 28px;
+            z-index: 10;
+            letter-spacing: 0.5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ─── AUDIO VISUALIZER ─── */
+        .audio-wave {
+            display: none;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+            height: 30px;
+            margin-top: 10px;
+        }
+        .listening .audio-wave { display: flex; }
+
+        .wave-bar {
+            width: 4px;
+            background: var(--green);
+            border-radius: 2px;
+            animation: waveBounce 0.5s ease infinite alternate;
+            box-shadow: 0 0 8px var(--green-glow);
+            transform: translateZ(0);
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes waveBounce {
+            0% { height: 6px; }
+            100% { height: 28px; }
+        }
+
+        /* ─── QUICK PROMPTS GRID ─── */
+        .quick-prompts-container {
+            margin-top: 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            max-width: 600px;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .qp-card {
+            background: var(--surface);
+            border: 1px solid var(--border-color-strong);
+            padding: 16px 20px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateZ(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .qp-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--green);
+            transform: translateY(-2px) translateZ(0);
+            box-shadow: var(--shadow-md), 0 0 10px var(--glow-color);
+        }
+
+        .qp-card:active { transform: translateY(1px) translateZ(0); }
+
+        .qp-card i {
+            color: var(--green);
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .qp-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .qp-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ─── CRICKET MATCH CENTER OVERLAY ─── */
+        .match-center {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-grad);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding: 60px 40px;
+            overflow-y: auto;
+            transform: translateZ(0);
+        }
+        
+        .match-center::before {
+            content: '';
+            position: absolute;
+            top: 20%; left: 50%;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .mc-close {
+            position: absolute;
+            top: 20px; right: 30px;
+            background: var(--surface);
+            border: 1px solid var(--border-color-strong);
+            color: var(--text-main);
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mc-close:hover { background: #ff4d4f; color: #fff; transform: rotate(90deg); }
+
+        .mc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .mc-team-info { display: flex; align-items: center; gap: 20px; }
+        .mc-team-name { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+        .mc-vs { color: var(--green); font-style: italic; font-weight: 600; }
+
+        .mc-score-big {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .mc-score-big span { font-size: 24px; color: var(--text-muted); font-weight: 400; margin-left: 10px; }
+
+        .mc-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 30px;
+            flex: 1;
+        }
+
+        .mc-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-glass);
+        }
+
+        .mc-card-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--green);
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mc-stats-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        .mc-stats-row.head { color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border-color-strong); }
+        .mc-stats-row:last-child { border-bottom: none; }
+        .mc-name-active { color: var(--green); font-weight: 600; }
+
+        .mc-commentary-feed {
+            max-height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding-right: 10px;
+        }
+
+        .comm-item {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--border-color-strong);
+            border-radius: 4px 12px 12px 4px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .comm-item.wicket { border-left-color: #ff4d4f; background: rgba(255, 77, 79, 0.05); }
+        .comm-item.boundary { border-left-color: var(--green); background: rgba(16, 185, 129, 0.05); }
+        .comm-over { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--green); margin-right: 8px; }
+
+        .live-tag {
+            background: #ef4444;
+            color: #fff;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            animation: pulseFade 1s infinite alternate;
+        }
+        @keyframes pulseFade { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes neonGlow { 
+            0% { box-shadow: 0 0 10px rgba(255, 193, 7, 0.1), 0 0 20px rgba(255, 193, 7, 0.05); }
+            100% { box-shadow: 0 0 25px rgba(255, 193, 7, 0.3), 0 0 50px rgba(255, 193, 7, 0.1); }
+        }
+        @keyframes borderFlow {
+            0% { border-color: rgba(255,193,7,0.2); }
+            50% { border-color: rgba(255,193,7,0.6); }
+            100% { border-color: rgba(255,193,7,0.2); }
+        }
+
+        /* ─── IPL ELECTRIC THEME OVERLAY ─── */
+        .ipl-dashboard {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-grad);
+            z-index: 110;
+            display: none;
+            flex-direction: column;
+            padding: 60px 40px;
+            overflow-y: hidden;
+            transform: translateZ(0);
+        }
+        
+        .ipl-dashboard::before {
+            content: '';
+            position: absolute;
+            top: 20%; left: 50%;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255, 193, 7, 0.05) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .ipl-header {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255,193,7,0.3);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 28px;
+            padding: 30px 45px;
+            margin-bottom: 24px;
+            animation: borderFlow 3s infinite ease-in-out;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.4);
+        }
+
+        .ipl-team { 
+            font-size: 42px; 
+            font-weight: 900; 
+            color: #fff; 
+            text-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            letter-spacing: -1px;
+        }
+        .ipl-score-center { text-align: center; }
+        .ipl-main-score { 
+            font-size: 72px; 
+            font-weight: 900; 
+            color: #ffc107; 
+            font-family: 'Outfit', sans-serif; 
+            line-height: 0.9;
+            text-shadow: 0 0 30px rgba(255, 193, 7, 0.3);
+        }
+        .ipl-overs { font-size: 22px; color: rgba(255,255,255,0.7); margin-top: 10px; font-weight: 600; letter-spacing: 1px; }
+        .ipl-match-state { 
+            display: inline-block;
+            background: rgba(52, 211, 153, 0.15);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 13px; 
+            color: #34d399; 
+            margin-top: 15px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .ipl-ticker {
+            background: #1e293b;
+            height: 50px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .ticker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #ffc107; font-weight: 800; }
+        .ball-history { display: flex; gap: 8px; }
+        .ball-circle {
+            width: 38px; height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 800;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ball-circle.four { 
+            background: linear-gradient(135deg, #34d399 0%, #059669 100%); 
+            color: #fff; 
+            border: none;
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.4); 
+        }
+        .ball-circle.six { 
+            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%); 
+            color: #fff; 
+            border: none;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); 
+        }
+        .ball-circle.wicket { 
+            background: linear-gradient(135deg, #f87171 0%, #dc2626 100%); 
+            color: #fff; 
+            border: none;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); 
+        }
+        .ball-circle:hover { transform: translateY(-5px) scale(1.1); }
+
+        .ipl-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 20px;
+            flex: 1;
+            padding-bottom: 20px;
+        }
+
+        .broadcast-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border-radius: 24px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .broadcast-card:hover {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(255, 193, 7, 0.3);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .stat-label { font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 4px; }
+        .stat-value { font-size: 24px; color: #fff; font-weight: 700; }
+        .stat-sub { font-size: 14px; color: #ffc107; font-family: 'JetBrains Mono', monospace; }
+
+        .ipl-comm-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .ipl-comm-item {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+        }
+        .ipl-comm-over { font-weight: 800; color: #ffc107; margin-right: 10px; }
+
+
+
+        /* =========================================
+           CHAT VIEW (Left sidebar)
+        ========================================= */
+        .chat-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 28px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .msg-row { display: flex; align-items: flex-start; gap: 14px; max-width: 95%; }
+        .msg-row.ai { align-self: flex-start; }
+        .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 15px;
+            margin-top: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .av-ai { background: var(--surface); color: var(--green); border: 1px solid var(--border-color); }
+        .av-user { background: var(--green); color: #fff; }
+
+        .msg-content { display: flex; flex-direction: column; gap: 6px; max-width: calc(100% - 50px); }
+
+        .msg-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-left: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .msg-row.user .msg-name { text-align: right; margin-right: 4px; }
+
+        /* ─── MULTI-MATCH BATCH DASHBOARD ─── */
+        .all-matches-dashboard {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(3, 5, 4, 0.98);
+            z-index: 120;
+            display: none;
+            flex-direction: column;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .match-card-batch {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .match-card-batch:hover {
+            border-color: var(--green);
+            background: rgba(16, 185, 129, 0.05);
+            transform: translateY(-5px);
+        }
+
+        .batch-team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .batch-team-name { font-weight: 700; color: #fff; font-size: 16px; }
+        .batch-score { font-family: 'JetBrains Mono', monospace; color: var(--green); font-weight: 800; font-size: 18px; }
+        .batch-status { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 8px; font-style: italic; }
+        .batch-date { font-size: 11px; color: #ffc107; font-weight: 700; text-transform: uppercase; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+        .bubble {
+            transform: translateZ(0);
+            padding: 14px 18px;
+            border-radius: 16px;
+            font-size: 14.5px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            box-shadow: var(--shadow-sm);
+            font-weight: 400;
+        }
+
+        .bubble.ai {
+            background: var(--msg-ai-bg);
+            border: 1px solid var(--msg-ai-border);
+            border-top-left-radius: 4px;
+            color: var(--text-main);
+        }
+
+        .bubble.user {
+            background: var(--msg-user-bg);
+            border: 1px solid var(--msg-user-border);
+            color: var(--text-main);
+            border-top-right-radius: 4px;
+        }
+
+        /* Typing */
+        .typing-row { display: none; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+        .typing-row.show { display: flex; }
+
+        .typing-bub {
+            display: flex;
+            gap: 6px;
+            padding: 14px 18px;
+            background: var(--msg-ai-bg);
+            border: 1px solid var(--msg-ai-border);
+            border-radius: 16px 16px 16px 4px;
+            align-items: center;
+            height: 42px;
+        }
+
+        .tdot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulseDot 1.4s infinite;
+        }
+
+        .tdot:nth-child(2) { animation-delay: 0.2s; }
+        .tdot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Code blocks */
+        .code-wrap {
+            margin-top: 14px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .code-top {
+            background: var(--code-header-bg);
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11.5px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .copy-btn {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { color: var(--green); border-color: var(--green); }
+
+        pre { margin: 0; }
+        pre code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 16px !important;
+            background: var(--code-bg) !important;
+        }
+
+        /* Input Box */
+        .chat-input-area {
+            transform: translateZ(0);
+            padding: 20px 28px 28px;
+            background: var(--input-area-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-wrap {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background: var(--input-wrap-bg);
+            border: 1px solid var(--border-color-strong);
+            border-radius: 24px;
+            padding: 12px 18px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .input-wrap:focus-within {
+            border-color: var(--green);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px var(--glow-color), var(--shadow-md);
+        }
+        .light-theme .input-wrap:focus-within { background: #fff; }
+
+        .chat-ta {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 14.5px;
+            color: var(--text-main);
+            resize: none;
+            min-height: 24px;
+            max-height: 160px;
+            padding: 2px 0;
+            line-height: 1.5;
+        }
+
+        .chat-ta::placeholder { color: var(--text-muted); font-weight: 400; }
+
+        .btn-send {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 14px var(--glow-color);
+        }
+
+        .btn-send:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 6px 20px var(--green-glow);
+        }
+        .btn-send:active { transform: scale(0.95); }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+
+        <!-- LEFT SIDEBAR (CHAT) -->
+        <aside class="sidebar">
+            <div class="sb-brand"
+                style="display:flex; justify-content:space-between; align-items:center; padding-right: 20px;">
+                <div id="uiAppName">Nxora<span>AI</span></div>
+                <button class="btn-circle"
+                    style="width:28px;height:28px;border:none;background:transparent;font-size:14px;color:#a1a1aa"
+                    onclick="clearSession()" title="Clear Chat">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="chat-feed" id="chatFeed">
+                <div class="msg-row ai" id="welcomeMsg">
+                    <div class="avatar av-ai"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="msg-content">
+                        <div class="msg-name" id="uiMsgName">NxoraAI</div>
+                        <div class="bubble ai" id="uiWelcome">Hello! I am NxoraAI. Ask me anything directly right here.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="typing-row" id="typingRow">
+                    <div class="avatar av-ai"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="msg-content">
+                        <div class="msg-name" id="uiTypingName">NxoraAI</div>
+                        <div class="typing-bub">
+                            <div class="tdot"></div>
+                            <div class="tdot"></div>
+                            <div class="tdot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="input-wrap">
+                    <textarea id="chatInput" class="chat-ta" placeholder="Send a message..." rows="1"></textarea>
+                    <button class="btn-send" onclick="submitChat()"><i class="fa-solid fa-arrow-up"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN AREA (VOICE) -->
+        <main class="main-content">
+            <div class="voice-center-wrap">
+                <div class="header-container">
+                    <div class="header-sub" id="uiAppSub">NxoraAI Engine 2026</div>
+                    <div class="header-main">Advanced AI Assistant<br><b>For Every Task</b></div>
+                </div>
+
+                <div class="core-container" id="energyCore">
+                    <div class="core-glow"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                    <div class="ring"></div>
+                </div>
+
+                <div class="controls-container">
+                    <button class="btn-circle" onclick="document.getElementById('chatInput').focus()"
+                        title="Type Message">
+                        <i class="fa-regular fa-keyboard"></i>
+                    </button>
+
+                    <div class="btn-mic-wrap" id="micWrapper">
+                        <div class="mic-aura"></div>
+                        <button class="btn-circle btn-mic" onclick="toggleVoice()" id="micBtn">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                    </div>
+
+                    <button class="btn-circle" onclick="clearSession()" title="Reset Session">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+
+                <div class="transcript-box" id="transcriptBox">
+                    <span id="transcriptText">Standby...</span>
+                    <!-- Waveform Visualizer -->
+                    <div class="audio-wave">
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                        <div class="wave-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Prompts Grid -->
+                <div class="quick-prompts-container" id="quickPrompts">
+                    <div class="qp-card" onclick="triggerQuickPrompt('Write a python script to scan my network')">
+                        <i class="fa-brands fa-python"></i>
+                        <div class="qp-title">Network Scanner</div>
+                        <div class="qp-desc">Write a python network scanning script</div>
+                    </div>
+                    <div class="qp-card" onclick="triggerQuickPrompt('Run System Diagnostic')">
+                        <i class="fa-solid fa-laptop-medical"></i>
+                        <div class="qp-title">System Diag</div>
+                        <div class="qp-desc">Check OS health & hardware vitals</div>
+                    </div>
+                    <div class="qp-card" onclick="triggerQuickPrompt('Check live cricket score')">
+                        <i class="fa-solid fa-baseball-bat-ball"></i>
+                        <div class="qp-title">Live Match</div>
+                        <div class="qp-desc">Fetch live cricket scores instantly</div>
+                    </div>
+                    <div class="qp-card" onclick="triggerQuickPrompt('Summarize the latest AI news in 3 bullet points')">
+                        <i class="fa-regular fa-newspaper"></i>
+                        <div class="qp-title">AI News</div>
+                        <div class="qp-desc">Get a 3-bullet summary of tech news</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CRICKET MATCH CENTER OVERLAY -->
+            <div class="match-center" id="matchCenter">
+                <button class="mc-close" onclick="closeMatchCenter()"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="mc-header">
+                    <div class="mc-team-info">
+                        <div class="mc-team-name" id="mcTeamA">INDIA</div>
+                        <div class="mc-vs">vs</div>
+                        <div class="mc-team-name" id="mcTeamB">AUSTRALIA</div>
+                    </div>
+                    <div class="mc-score-big" id="mcMainScore">245/4 <span id="mcOvers">38.2 Ov</span></div>
+                </div>
+
+                <div class="mc-grid">
+                    <div class="mc-left-col">
+                        <div class="mc-card" style="margin-bottom: 30px;">
+                            <div class="mc-card-title"><i class="fa-solid fa-person-running"></i> Current Partnership</div>
+                            <div class="mc-stats-row head">
+                                <span>BATSMAN</span>
+                                <span>R</span>
+                                <span>B</span>
+                                <span>4s/6s</span>
+                            </div>
+                            <div id="mcBatters">
+                                <!-- Dynamic Loading -->
+                            </div>
+                        </div>
+
+                        <div class="mc-card">
+                            <div class="mc-card-title"><i class="fa-solid fa-baseball"></i> Live Bowling</div>
+                            <div class="mc-stats-row head">
+                                <span>BOWLER</span>
+                                <span>O</span>
+                                <span>W</span>
+                                <span>R</span>
+                            </div>
+                            <div id="mcBowlers">
+                                <!-- Dynamic Loading -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mc-right-col">
+                        <div class="mc-card">
+                            <div class="mc-card-title"><i class="fa-solid fa-microphone-lines"></i> Live Commentary</div>
+                            <div class="mc-commentary-feed" id="mcCommentary">
+                                <!-- Dynamic Commentary Items -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MULTI-MATCH DASHBOARD ─── -->
+            <div id="allMatchesDash" class="all-matches-dashboard">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div class="mc-card-title"><i class="fa-solid fa-tower-broadcast"></i> Live Multi-Feed</div>
+                    <div id="matchTimestamp" style="font-size: 12px; color: rgba(16, 185, 129, 0.6); font-family: 'JetBrains Mono', monospace;">Last Sync: --:--:--</div>
+                    <button class="mc-close" onclick="closeAllMatchesDash()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div id="matchesGrid" class="matches-grid">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- IPL 2026 DASHBOARD OVERLAY -->
+            <div class="ipl-dashboard" id="iplDash">
+                <button class="mc-close" onclick="closeIPLDashboard()"><i class="fa-solid fa-xmark"></i></button>
+
+                <div class="ipl-header">
+                    <div class="ipl-team" id="iplTeamA">CSK</div>
+                    <div class="ipl-score-center">
+                        <div class="ipl-main-score" id="iplScore">186/3</div>
+                        <div class="ipl-overs" id="iplOvers">16.4 OVERS</div>
+                        <div class="ipl-match-state" id="iplMatchState">LIVE ACTION</div>
+                    </div>
+                    <div class="ipl-team" style="text-align:right;" id="iplTeamB">MI</div>
+                </div>
+
+                <div class="ipl-ticker">
+                    <div class="ticker-label">Last 6 Balls</div>
+                    <div class="ball-history" id="iplHistory">
+                        <div class="ball-circle">1</div>
+                        <div class="ball-circle four">4</div>
+                        <div class="ball-circle">0</div>
+                        <div class="ball-circle six">6</div>
+                        <div class="ball-circle wicket">W</div>
+                        <div class="ball-circle">1</div>
+                    </div>
+                    <div class="ticker-label" style="margin-left:auto; color:rgba(255,255,255,0.4)">RR: <span style="color:#fff">11.16</span></div>
+                </div>
+
+                <div class="ipl-grid">
+                    <!-- CARD 1: MATCH TRENDS -->
+                    <div class="broadcast-card">
+                        <div class="mc-card-title" style="color:#ffc107"><i class="fa-solid fa-chart-line"></i> Match Trends</div>
+                        <div style="display:flex; gap:20px; margin-bottom:20px;">
+                            <div style="flex:1">
+                                <div class="stat-label">Current RR</div>
+                                <div class="stat-value" id="iplCRR">--</div>
+                            </div>
+                            <div style="flex:1">
+                                <div class="stat-label">Req. RR</div>
+                                <div class="stat-value" id="iplRRR">--</div>
+                            </div>
+                        </div>
+                        <div id="iplProjWrap" style="margin-bottom:20px; display:none;">
+                            <div class="stat-label">Projected Score</div>
+                            <div class="stat-value" id="iplProj">--</div>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
+                            <div class="stat-label">Current Partnership</div>
+                            <div class="stat-sub" id="iplPartnership">Loading partnership...</div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2: BATTING FOCUS -->
+                    <div class="broadcast-card">
+                        <div class="mc-card-title" style="color:#ffc107"><i class="fa-solid fa-user-gear"></i> Batting Focus</div>
+                        <div id="iplBatters">
+                            <!-- Dynamic Batters -->
+                        </div>
+                    </div>
+
+                    <!-- CARD 3: BOWLING FOCUS -->
+                    <div class="broadcast-card">
+                        <div class="mc-card-title" style="color:#ffc107"><i class="fa-solid fa-baseball"></i> Bowling Focus</div>
+                        <div id="iplBowlers">
+                            <!-- Dynamic Bowlers -->
+                        </div>
+                    </div>
+
+                    <!-- CARD 4: LIVE FEED -->
+                    <div class="broadcast-card">
+                        <div class="mc-card-title" style="color:#ffc107"><i class="fa-solid fa-microphone"></i> Live Feed</div>
+                        <div class="ipl-comm-list" id="iplComm">
+                            <!-- Commentary -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR (SHORTCUTS) -->
+        <aside class="sidebar-right">
+            
+            <div class="vitals-dashboard" id="vitalsDash" style="margin: 0 0 24px 0;">
+                <div class="vitals-title"><i class="fa-solid fa-microchip"></i> Engine Vitals</div>
+                
+                <div class="vital-row">
+                    <span class="vital-label">CPU Usage</span>
+                    <span class="vital-val" id="vitalCpuText">12%</span>
+                </div>
+                <div class="vital-bar-bg"><div class="vital-bar-fill" id="vitalCpuBar" style="width: 12%"></div></div>
+                
+                <div class="vital-row">
+                    <span class="vital-label">RAM Usage</span>
+                    <span class="vital-val" id="vitalRamText">4.2 GB</span>
+                </div>
+                <div class="vital-bar-bg"><div class="vital-bar-fill" id="vitalRamBar" style="width: 25%"></div></div>
+            </div>
+
+            <div class="sb-history-title" style="margin-top: 10px;">Quick Shortcuts</div>
+
+            <div class="shortcut-group">
+                <button class="shortcut-btn" onclick="toggleTheme()" id="themeBtn">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i> Toggle Theme
+                </button>
+                <button class="shortcut-btn" onclick="sendShortcut('Run System Diagnostic')">
+                    <i class="fa-solid fa-microchip"></i> System Health
+                </button>
+                <button class="shortcut-btn" onclick="sendShortcut('Test Local Network Speed')">
+                    <i class="fa-solid fa-wifi"></i> Network Scan
+                </button>
+                <button class="shortcut-btn" onclick="sendShortcut('What is the weather today?')">
+                    <i class="fa-solid fa-cloud-sun"></i> Weather Report
+                </button>
+                <button class="shortcut-btn" onclick="sendShortcut('Open Notepad')">
+                    <i class="fa-regular fa-file-lines"></i> Open Notepad
+                </button>
+                <button class="shortcut-btn" onclick="sendShortcut('Take a screenshot')">
+                    <i class="fa-solid fa-camera"></i> Screenshot
+                </button>
+                <button class="shortcut-btn" onclick="startLiveCricket('https://www.espncricinfo.com/series/indian-premier-league-2025-26-1510719')" title="Live IPL Scraping">
+                    <i class="fa-solid fa-trophy"></i>
+                    <div style="flex:1">
+                        <div style="display:flex; align-items:center; gap:8px">
+                            IPL 2026 <span class="live-tag">LIVE</span>
+                        </div>
+                    </div>
+                </button>
+
+                <button class="shortcut-btn" onclick="startLiveCricketBatch()" title="Live Match Center">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <div style="flex:1">
+                        <div style="display:flex; align-items:center; gap:8px">
+                            Live Match <span class="live-tag">SYNC</span>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="cricket-widget" id="cricketWidget">
+                <div class="cw-header">
+                    <i class="fa-solid fa-satellite-dish"></i> LIVE MATCH CENTER
+                </div>
+                <div class="cw-body" id="cricketScoreText">
+                    Connecting to stadium feed...
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        /* ─── CONFIGURATION LOADER ─── */
+        let appConfig = {
+            assistant_name: "Nxora",
+            assistant_version: "2026",
+            primary_color: "#4ade80"
+        };
+        
+        function displayError(msg) {
+            console.error(msg);
+            const transcriptBox = document.getElementById('transcriptText');
+            if (transcriptBox) {
+                const oldText = transcriptBox.innerText;
+                transcriptBox.innerHTML = `<span style="color: #ff4d4f;"><i class="fa-solid fa-triangle-exclamation"></i> Error: ${msg}</span>`;
+                setTimeout(() => {
+                    if (transcriptBox.innerText.includes('Error:')) {
+                        transcriptBox.innerText = "Standby...";
+                    }
+                }, 5000);
+            }
+        }
+        
+        window.addEventListener('error', e => {
+            if (e.message) {
+                // If it's a ReferenceError, we still want to see it!
+                console.error("Caught UI Error: ", e.message);
+                displayError("UI Error: " + e.message);
+            }
+        });
+
+        // Explicitly expose functions to the global window object to prevent QtWebEngine Reference Errors
+        window.injectConfig = function(configStr) {
+            try {
+                const data = JSON.parse(configStr);
+                appConfig = { ...appConfig, ...data };
+                applyConfigToUI();
+            } catch (e) {
+                console.error("Using default config due to parsing exception:", e);
+                applyConfigToUI();
+            }
+        };
+
+        function applyConfigToUI() {
+            try {
+                if (document.getElementById('uiAppName')) document.getElementById('uiAppName').innerHTML = `${appConfig.assistant_name}<span>AI</span>`;
+                if (document.getElementById('uiAppSub')) document.getElementById('uiAppSub').innerText = `${appConfig.assistant_name} Engine ${appConfig.assistant_version}`;
+                if (document.getElementById('uiMsgName')) document.getElementById('uiMsgName').innerText = appConfig.assistant_name;
+                if (document.getElementById('uiWelcome')) document.getElementById('uiWelcome').innerText = `Hello! I am ${appConfig.assistant_name}. Ask me anything directly right here.`;
+                if (document.getElementById('uiTypingName')) document.getElementById('uiTypingName').innerText = appConfig.assistant_name;
+                document.title = `${appConfig.assistant_name} - Neural Assistant`;
+            } catch (e) {
+                console.error("Error applying config to UI:", e);
+            }
+        }
+
+        // Load fallback config immediately until Python bridges dynamically
+        applyConfigToUI();
+
+        /* ─── PYTHON BRIDGE ─── */
+        window.backend = null;
+        try {
+            new QWebChannel(qt.webChannelTransport, function (ch) {
+                console.log("[BRIDGE] Connected to Python backend");
+                window.backend = ch.objects.backend;
+            });
+        } catch (e) {
+            console.log("[BRIDGE] QWebChannel not found, mocking environment.");
+        }
+
+        function _send(t) {
+            if (t && backend) {
+                backend.receive_text(t);
+            }
+        }
+
+        /* ─── VOICE LOGIC ─── */
+        let isListening = false;
+        const micWrapper = () => document.getElementById('micWrapper');
+        const btnMic = () => document.getElementById('micBtn');
+        const energyCore = () => document.getElementById('energyCore');
+        const transcriptText = () => document.getElementById('transcriptText');
+        const transcriptBox = () => document.getElementById('transcriptBox');
+        const quickPrompts = () => document.getElementById('quickPrompts');
+
+        function toggleVoice() {
+            if (backend) {
+                backend.trigger_voice();
+            } else {
+                isListening = !isListening;
+                if (isListening) updateStatus('Listening...', 'listening');
+                else updateStatus('Standby...', 'standby');
+            }
+        }
+
+        /* ─── CHAT LOGIC ─── */
+        const chatInput = document.getElementById('chatInput');
+        chatInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        chatInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitChat();
+            }
+        });
+
+        function submitChat() {
+            const txt = chatInput.value.trim();
+            if (!txt) return;
+            handleCommandInitiation(txt, false);
+        }
+
+        function sendShortcut(cmd) {
+            handleCommandInitiation(cmd, false);
+        }
+
+        function triggerQuickPrompt(cmd) {
+            handleCommandInitiation(cmd, true);
+        }
+
+        function handleCommandInitiation(text, isInjection) {
+            // Hide quick prompts when chat starts
+            const qp = quickPrompts();
+            if(qp && qp.style.display !== 'none') {
+                gsap.to(qp, {opacity: 0, y: 20, duration: 0.3, onComplete: () => qp.style.display = 'none'});
+            }
+            
+            appendMessage('You', text, '');
+            _send(text);
+            updateStatus('Processing...', 'processing');
+            
+            if(!isInjection){
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
+            }
+        }
+
+        function clearSession() {
+            document.getElementById('chatFeed').innerHTML = `
+    <div class="msg-row ai" id="welcomeMsg">
+      <div class="avatar av-ai"><i class="fa-solid fa-bolt"></i></div>
+      <div class="msg-content">
+        <div class="msg-name" id="uiMsgName">${appConfig.assistant_name}</div>
+        <div class="bubble ai" id="uiWelcome">Hello! I am ${appConfig.assistant_name}. Ask me anything directly right here.</div>
+      </div>
+    </div>
+    <div class="typing-row" id="typingRow">
+      <div class="avatar av-ai"><i class="fa-solid fa-bolt"></i></div>
+      <div class="msg-content">
+        <div class="msg-name" id="uiTypingName">${appConfig.assistant_name}</div>
+        <div class="typing-bub">
+          <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+        </div>
+      </div>
+    </div>
+  `;
+            const tt = transcriptText();
+            if(tt) tt.textContent = "Standby...";
+            
+            // Show quick prompts again on clear
+            const qp = quickPrompts();
+            if(qp) {
+                qp.style.display = 'grid';
+                gsap.fromTo(qp, {opacity: 0, y: 20}, {opacity: 1, y: 0, duration: 0.4});
+            }
+        }
+
+        /* =========================================
+           APPEND MESSAGE (Called by main.py)
+        ========================================= */
+        window.appendMessage = function(sender, text, colorOrType) {
+            if (colorOrType === 'system') return;
+            
+            // Hide quick prompts when any message arrives (e.g., auto-start)
+            const qp = quickPrompts();
+            if(qp && qp.style.display !== 'none' && sender !== appConfig.assistant_name) {
+                gsap.to(qp, {opacity: 0, y: 20, duration: 0.3, onComplete: () => qp.style.display = 'none'});
+            }
+
+            // Ensure text is always a valid string to prevent .length null errors
+            text = text || "";
+            const isUser = (sender === 'You');
+
+            // 1. Update Voice Transcript View
+            const tb = transcriptBox();
+            const tt = transcriptText();
+            if(tb && tt) {
+                let shortText = text.length > 150 ? text.slice(0, 150) + '...' : text;
+                if (isUser) {
+                    tb.innerHTML = `"<span style="color:#ffffff">${shortText}</span>"`;
+                } else {
+                    tb.innerHTML = `<span style="color:var(--green)">${shortText}</span>`;
+                }
+            }
+
+            // 2. Update Chat View Feed
+            const feed = document.getElementById('chatFeed');
+            const typingRow = document.getElementById('typingRow');
+
+            const row = document.createElement('div');
+            row.className = `msg-row ${isUser ? 'user' : 'ai'}`;
+
+            const av = document.createElement('div');
+            av.className = `avatar ${isUser ? 'av-user' : 'av-ai'}`;
+            av.innerHTML = isUser ? '<i class="fa-regular fa-user"></i>' : '<i class="fa-solid fa-bolt"></i>';
+
+            const msgContent = document.createElement('div');
+            msgContent.className = 'msg-content';
+
+            const msgName = document.createElement('div');
+            msgName.className = 'msg-name';
+            msgName.textContent = isUser ? 'You' : appConfig.assistant_name;
+
+            const bub = document.createElement('div');
+            bub.className = `bubble ${isUser ? 'user' : 'ai'}`;
+
+            if (!isUser && text.includes('```')) {
+                const parts = text.split('```');
+                for (let i = 0; i < parts.length; i++) {
+                    if (i % 2 === 1) {
+                        const lines = parts[i].split('\\n');
+                        const lang = lines[0].trim() || 'code';
+                        const code = (lang !== 'code' ? lines.slice(1) : lines).join('\\n').trim();
+                        const wrap = document.createElement('div'); wrap.className = 'code-wrap';
+                        const top = document.createElement('div'); top.className = 'code-top';
+                        const ls = document.createElement('span'); ls.textContent = lang.toUpperCase();
+                        const cb = document.createElement('button'); cb.className = 'copy-btn';
+                        cb.innerHTML = 'Copy';
+                        cb.onclick = () => { navigator.clipboard.writeText(code); cb.innerHTML = 'Copied!'; setTimeout(() => cb.innerHTML = 'Copy', 2000); };
+                        top.appendChild(ls); top.appendChild(cb);
+                        const pre = document.createElement('pre'); const cel = document.createElement('code');
+                        cel.className = lang !== 'code' ? 'language-' + lang : '';
+                        cel.textContent = code; pre.appendChild(cel); wrap.appendChild(top); wrap.appendChild(pre);
+                        bub.appendChild(wrap); setTimeout(() => hljs.highlightElement(cel), 0);
+                    } else if (parts[i].trim()) {
+                        const sp = document.createElement('span'); sp.style.cssText = 'white-space:pre-wrap;display:block;margin-bottom:4px';
+                        sp.textContent = parts[i]; bub.appendChild(sp);
+                    }
+                }
+            } else {
+                bub.textContent = text;
+            }
+
+            msgContent.appendChild(msgName);
+            msgContent.appendChild(bub);
+
+            row.appendChild(av);
+            row.appendChild(msgContent);
+            feed.insertBefore(row, typingRow);
+
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(row, { opacity: 0, x: isUser ? 20 : -20 }, { opacity: 1, x: 0, duration: 0.3, ease: 'power2.out' });
+            }
+
+            feed.appendChild(typingRow);
+            scrollFeed();
+        }
+
+        function scrollFeed() {
+            const feed = document.getElementById('chatFeed');
+            setTimeout(() => feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' }), 50);
+        }
+
+        /* =========================================
+           UI WIDGET TRIGGERS (Live Feed Extensibility)
+        ========================================= */
+        function showCricketScore(scoreText) {
+            // If we receive a JSON string, show the Full Match Center
+            if (scoreText && (scoreText.startsWith('{') || scoreText.startsWith('['))) {
+                try {
+                    const data = JSON.parse(scoreText);
+                    showMatchCenter(data);
+                    return;
+                } catch(e) {}
+            }
+
+            // Fallback: Sidebar widget update
+            const widget = document.getElementById('cricketWidget');
+            const textEl = document.getElementById('cricketScoreText');
+
+            if (!widget.classList.contains('active')) {
+                widget.classList.add('active');
+            }
+
+            if (scoreText) {
+                if (textEl.innerHTML !== scoreText) {
+                    if (typeof gsap !== 'undefined') {
+                        gsap.to(textEl, {
+                            opacity: 0, duration: 0.15, onComplete: () => {
+                                textEl.innerHTML = scoreText;
+                                gsap.to(textEl, { opacity: 1, duration: 0.2 });
+                            }
+                        });
+                    } else {
+                        textEl.innerHTML = scoreText;
+                    }
+                }
+            }
+        }
+
+        function showMatchCenter(data) {
+            const mc = document.getElementById('matchCenter');
+            
+            // Populate Header
+            document.getElementById('mcTeamA').innerText = data.teamA || "TEAM A";
+            document.getElementById('mcTeamB').innerText = data.teamB || "TEAM B";
+            document.getElementById('mcMainScore').innerHTML = `${data.score || '0/0'} <span>${data.overs || '0'} Ov</span>`;
+
+            // Populate Batters
+            const batterWrap = document.getElementById('mcBatters');
+            batterWrap.innerHTML = (data.batters || []).map(b => `
+                <div class="mc-stats-row">
+                    <span class="${b.active ? 'mc-name-active' : ''}">${b.name}${b.active ? '*' : ''}</span>
+                    <span>${b.runs}</span>
+                    <span>${b.balls}</span>
+                    <span>${b.fours}/${b.sixes}</span>
+                </div>
+            `).join('');
+
+            // Populate Bowlers
+            const bowlerWrap = document.getElementById('mcBowlers');
+            bowlerWrap.innerHTML = (data.bowlers || []).map(b => `
+                <div class="mc-stats-row">
+                    <span class="${b.active ? 'mc-name-active' : ''}">${b.name}</span>
+                    <span>${b.overs}</span>
+                    <span>${b.wickets}</span>
+                    <span>${b.runs}</span>
+                </div>
+            `).join('');
+
+            // Populate Commentary
+            const commWrap = document.getElementById('mcCommentary');
+            commWrap.innerHTML = (data.commentary || []).map(c => `
+                <div class="comm-item ${c.type || ''}">
+                    <span class="comm-over">${c.over}</span> ${c.text}
+                </div>
+            `).join('');
+
+            // Animate In
+            mc.style.display = 'flex';
+            gsap.fromTo(mc, {opacity: 0, scale: 0.95}, {opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out'});
+        }
+
+        function closeMatchCenter() {
+            const mc = document.getElementById('matchCenter');
+            gsap.to(mc, {opacity: 0, scale: 1.05, duration: 0.3, onComplete: () => mc.style.display = 'none'});
+        }
+
+        /* ─── IPL DASHBOARD LOGIC ─── */
+        window.showIPLDashboard = function(data) {
+            console.log("[JS] showIPLDashboard received:", data);
+            const dash = document.getElementById('iplDash');
+            const isVisible = dash.style.display === 'flex';
+            
+            document.getElementById('iplTeamA').innerText = data.teamA || "Home";
+            document.getElementById('iplTeamB').innerText = data.teamB || "Away";
+            document.getElementById('iplScore').innerText = data.score || "Connecting...";
+            document.getElementById('iplOvers').innerText = (data.overs || "0.0") + " OVERS";
+            document.getElementById('iplMatchState').innerText = data.matchState || "";
+
+            // Card 1: Match Trends
+            document.getElementById('iplCRR').innerText = data.runRate || "--";
+            document.getElementById('iplRRR').innerText = data.reqRunRate || "--";
+            const projWrap = document.getElementById('iplProjWrap');
+            if (data.projectedScore) {
+                projWrap.style.display = 'block';
+                document.getElementById('iplProj').innerText = data.projectedScore;
+            } else {
+                projWrap.style.display = 'none';
+            }
+            document.getElementById('iplPartnership').innerText = data.partnership || "No active partnership info";
+
+            // Card 2: Batters
+            const bWrap = document.getElementById('iplBatters');
+            bWrap.innerHTML = (data.batters || []).map(b => `
+                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:16px; font-weight:700; color:${b.active ? '#ffc107' : '#fff'}">${b.name}${b.active ? '*' : ''}</span>
+                        <span style="font-size:18px; font-weight:900; color:#fff">${b.runs}</span>
+                    </div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px;">${b.balls} Balls | ${b.fours||0}x4 ${b.sixes||0}x6 | SR: ${b.balls > 0 ? ((b.runs/b.balls)*100).toFixed(1) : "0.0"}</div>
+                </div>
+            `).join('');
+
+            // Card 3: Bowlers
+            const bowlWrap = document.getElementById('iplBowlers');
+            bowlWrap.innerHTML = (data.bowlers || []).map(b => `
+                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:16px; font-weight:700; color:${b.active ? '#34d399' : '#fff'}">${b.name}</span>
+                        <span style="font-size:18px; font-weight:900; color:#fff">${b.wickets}/${b.runs}</span>
+                    </div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px;">${b.overs} Overs | Econ: ${b.overs > 0 ? (b.runs/b.overs).toFixed(2) : "0.00"}</div>
+                </div>
+            `).join('');
+
+            // Card 4: History
+            const hWrap = document.getElementById('iplHistory');
+            hWrap.innerHTML = (data.history || []).map(v => {
+                let cls = '';
+                if(v === '4') cls = 'four';
+                else if(v === '6') cls = 'six';
+                else if(v === 'W') cls = 'wicket';
+                return `<div class="ball-circle ${cls}">${v}</div>`;
+            }).join('');
+
+            // Commentary
+            const cWrap = document.getElementById('iplComm');
+            cWrap.innerHTML = (data.commentary || []).map(c => `
+                <div class="ipl-comm-item">
+                    <span class="ipl-comm-over">${c.over}</span> ${c.text}
+                </div>
+            `).join('');
+
+            if (!isVisible) {
+                dash.style.display = 'flex';
+                if (window.gsap) {
+                    gsap.fromTo(dash, {opacity: 0, scale: 0.95}, {opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out'});
+                    // Stagger broadcast cards
+                    gsap.fromTo(".broadcast-card", {opacity: 0, y: 30}, {opacity: 1, y: 0, stagger: 0.1, duration: 0.5, delay: 0.3, ease: 'back.out(1.7)'});
+                    // Pop in the header
+                    gsap.fromTo(".ipl-header", {scale: 0.9, opacity: 0}, {scale: 1, opacity: 1, duration: 0.8, ease: 'elastic.out(1, 0.5)', delay: 0.2});
+                }
+            }
+        }
+
+        function closeIPLDashboard() {
+            const dash = document.getElementById('iplDash');
+            gsap.to(dash, {opacity: 0, y: 30, duration: 0.4, onComplete: () => {
+                dash.style.display = 'none';
+                if (window.backend) window.backend.stop_live_cricket();
+            }});
+        }
+        
+        /* ─── ALL MATCHES BATCH LOGIC ─── */
+        window.showAllMatches = function(matches) {
+            console.log("[JS] showAllMatches called with:", matches);
+            try {
+                const dash = document.getElementById('allMatchesDash');
+                const grid = document.getElementById('matchesGrid');
+                const ts = document.getElementById('matchTimestamp');
+                
+                if (ts) {
+                    const now = new Date();
+                    ts.innerText = `Last Sync: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+                }
+                
+                if (!grid) {
+                    console.error("[JS] matchesGrid not found!");
+                    return;
+                }
+
+                if (!matches || !Array.isArray(matches) || matches.length === 0) {
+                    grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: rgba(255,255,255,0.4); font-size: 18px;">
+                        <i class="fa-solid fa-moon" style="font-size: 40px; margin-bottom: 20px; display: block;"></i>
+                        No live matches found at the moment.
+                    </div>`;
+                } else {
+                    grid.innerHTML = matches.map(m => `
+                        <div class="match-card-batch" onclick="if(window.startLiveCricket) window.startLiveCricket('${m.url}')">
+                            <div class="batch-team-row">
+                                <span class="batch-team-name">${m.teamA || 'Unknown'}</span>
+                                <span class="batch-score">${m.scoreA || ''}</span>
+                            </div>
+                            <div class="batch-team-row">
+                                <span class="batch-team-name">${m.teamB || 'Unknown'}</span>
+                                <span class="batch-score">${m.scoreB || ''}</span>
+                            </div>
+                            <div class="batch-date">
+                                ${m.startTime ? `<i class="fa-regular fa-calendar"></i> ${new Date(m.startTime).toLocaleString('en-IN', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', hour12:true})}` : ''}
+                                ${m.venue ? ` • <i class="fa-solid fa-location-dot"></i> ${m.venue}` : ''}
+                            </div>
+                            <div class="batch-status">${m.status || ''}</div>
+                        </div>
+                    `).join('');
+                }
+
+                if (dash && dash.style.display !== 'flex') {
+                    dash.style.display = 'flex';
+                    if (window.gsap) gsap.fromTo(dash, {opacity: 0, scale: 0.9}, {opacity: 1, scale: 1, duration: 0.4});
+                }
+            } catch (err) {
+                console.error("[JS] Error in showAllMatches:", err);
+            }
+        };
+
+        window.closeAllMatchesDash = function() {
+            const dash = document.getElementById('allMatchesDash');
+            gsap.to(dash, {opacity: 0, scale: 1.1, duration: 0.3, onComplete: () => {
+                dash.style.display = 'none';
+                if (window.backend) window.backend.stop_live_cricket();
+            }});
+        };
+
+        window.startLiveCricketBatch = function() {
+            try {
+                console.log("[JS] startLiveCricketBatch called");
+                const dash = document.getElementById('allMatchesDash');
+                const grid = document.getElementById('matchesGrid');
+                
+                if(!window.backend) {
+                    console.error("[JS] Backend NOT ready!");
+                    displayError("Neural link not established yet.");
+                    return;
+                }
+
+                // Reset sync timer
+                if(window.cricketSyncCheck) clearInterval(window.cricketSyncCheck);
+                let secondsSinceUpdate = 0;
+                window.cricketSyncCheck = setInterval(() => {
+                    secondsSinceUpdate++;
+                    if (secondsSinceUpdate > 20) {
+                        const ts = document.getElementById('matchTimestamp');
+                        if(ts) ts.innerHTML = `⚠️ <span style="color:#ef4444">Sync Lost</span> | <a href="#" onclick="location.reload()" style="color:#38bdf8">Reload App</a>`;
+                    }
+                }, 1000);
+
+                // Show immediately with loading state
+                grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--green); font-size: 18px;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 40px; margin-bottom: 20px; display: block;"></i>
+                    Connecting to live neural feed...
+                </div>`;
+                
+                dash.style.display = 'flex';
+                if (window.gsap) gsap.fromTo(dash, {opacity: 0, scale: 0.9}, {opacity: 1, scale: 1, duration: 0.4});
+                
+                window.backend.start_live_cricket("");
+                
+                // Track update
+                const originalShowAll = window.showAllMatches;
+                window.showAllMatches = function(m) {
+                    console.log("[JS] showAllMatches received data pulse");
+                    secondsSinceUpdate = 0;
+                    if(originalShowAll) originalShowAll(m);
+                };
+            } catch (err) {
+                console.error("[JS] Failed to start batch feed:", err);
+            }
+        };
+
+        window.startLiveCricket = function(url) {
+            try {
+                const dash = document.getElementById('allMatchesDash');
+                if (dash) dash.style.display = 'none';
+                
+                if (window.backend) {
+                    window.backend.start_live_cricket(url || ""); 
+                }
+            } catch (err) {
+                console.error("[JS] Failed to start single match:", err);
+            }
+        };
+
+        /* =========================================
+           UPDATE STATUS (Called by main.py)
+        ========================================= */
+        window.updateStatus = function(statusText, colorConfig) {
+            const mw = micWrapper();
+            const ec = energyCore();
+            const bm = btnMic();
+            const tt = transcriptText();
+            const tr = document.getElementById('typingRow');
+
+            if(mw) mw.classList.remove('listening');
+            if(ec) ec.classList.remove('processing');
+            if(tr) tr.classList.remove('show');
+            if(bm) bm.classList.remove('active');
+
+            if(tt) {
+                tt.textContent = statusText;
+
+                if (colorConfig === 'listening') {
+                    if(mw) mw.classList.add('listening');
+                    if(bm) bm.classList.add('active');
+                    if(tt.parentElement) tt.parentElement.classList.add('listening'); // trigger wave
+                    isListening = true;
+                }
+                else if (colorConfig === 'processing') {
+                    if(ec) ec.classList.add('processing');
+                    if(tr) tr.classList.add('show');
+                    if(tt.parentElement) tt.parentElement.classList.remove('listening');
+                    isListening = false;
+                    scrollFeed();
+                }
+                else if (colorConfig === 'online' || colorConfig === 'standby') {
+                    isListening = false;
+                    if(tt.parentElement) tt.parentElement.classList.remove('listening');
+                }
+            }
+        }
+
+        /* =========================================
+           VITALS MOCKUP GENERATOR
+        ========================================= */
+        function simulateVitals() {
+            // In a real Qt setup, you'd bridge this from psutil in Python.
+            // For now, we simulate dynamic engine loads.
+            const cpu = Math.floor(Math.random() * 15) + 5; // 5% - 20% idlish
+            const ram = (Math.random() * 0.5 + 3.8).toFixed(1); // 3.8 - 4.3 GB
+            
+            document.getElementById('vitalCpuText').innerText = cpu + '%';
+            document.getElementById('vitalRamText').innerText = ram + ' GB';
+            
+            document.getElementById('vitalCpuBar').style.width = cpu + '%';
+            document.getElementById('vitalRamBar').style.width = ((ram/16)*100) + '%';
+        }
+        setInterval(simulateVitals, 3000);
+        simulateVitals();
+
+        /* =========================================
+           UI THEME TOGGLE
+        ========================================= */
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            const icon = document.getElementById('themeIcon');
+            if (isLight) {
+                icon.className = 'fa-solid fa-moon';
+            } else {
+                icon.className = 'fa-solid fa-sun';
+            }
+        }
+
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const errStr = `[JS ERROR] ${msg} at ${lineNo}:${columnNo}`;
+            if (window.backend) window.backend.receive_text(`!! JS ERROR: ${errStr}`);
+            return false;
+        };
+    </script>
+</body>
+
+</html>
