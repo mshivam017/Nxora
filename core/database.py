@@ -56,17 +56,7 @@ class MemoryDB:
             '''CREATE TABLE IF NOT EXISTS user_prefs (key TEXT PRIMARY KEY, value TEXT)''',
             '''CREATE TABLE IF NOT EXISTS sys_command (id INTEGER PRIMARY KEY, name VARCHAR(100), path VARCHAR(1000))''',
             '''CREATE TABLE IF NOT EXISTS web_command (id INTEGER PRIMARY KEY, name VARCHAR(100), url VARCHAR(1000))''',
-            '''CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, name VARCHAR(200), mobile_no VARCHAR(255))''',
-            '''CREATE TABLE IF NOT EXISTS live_matches (
-                match_id TEXT PRIMARY KEY,
-                teamA TEXT,
-                teamB TEXT,
-                scoreA TEXT,
-                scoreB TEXT,
-                status TEXT,
-                url TEXT,
-                last_updated DATETIME DEFAULT CURRENT_TIMESTAMP
-            )'''
+            '''CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY, name VARCHAR(200), mobile_no VARCHAR(255))'''
         ]
         for query in tables:
             self._execute(query)
@@ -94,37 +84,3 @@ class MemoryDB:
         result = self._execute('SELECT value FROM user_prefs WHERE key = ?', (key,), fetch="one")
         return result[0] if result else None
 
-    def save_live_match(self, m_data: dict):
-        """Saves or updates a live match in the DB with defensive defaults."""
-        if not isinstance(m_data, dict): return
-        
-        # Use URL as a unique match_id
-        match_id = m_data.get('url', 'unknown')
-        if not match_id: match_id = 'unknown'
-        
-        self._execute('''
-            INSERT OR REPLACE INTO live_matches (match_id, teamA, teamB, scoreA, scoreB, status, url, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ''', (
-            match_id, 
-            m_data.get('teamA', 'Unknown'), 
-            m_data.get('teamB', 'Unknown'), 
-            m_data.get('scoreA', m_data.get('score', '0/0')), 
-            m_data.get('scoreB', 'Yet to bat'), 
-            m_data.get('status', 'Live'), 
-            m_data.get('url', '')
-        ))
-
-    def get_latest_matches(self) -> List[dict]:
-        """Retrieves all live matches sorted by last update."""
-        rows = self._execute("SELECT teamA, teamB, scoreA, scoreB, status, url FROM live_matches ORDER BY last_updated DESC", fetch="all")
-        return [
-            {"teamA": r[0], "teamB": r[1], "scoreA": r[2], "scoreB": r[3], "status": r[4], "url": r[5]}
-            for r in rows
-        ]
-
-    def cleanup_live_matches(self, keep_limit: int = 20):
-        """Optimizes DB by removing old match snapshots if count exceeds limit."""
-        # Simple cleanup logic: for live matches table, it's just a snapshot table
-        # If we had a history table, we would purge records older than 24h
-        pass

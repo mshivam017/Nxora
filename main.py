@@ -18,58 +18,84 @@ from PyQt5.QtWebChannel import QWebChannel
 from core.database import MemoryDB
 from core.engine import AIWorker, safe_call
 from core.audio import WakeWordWorker, VoiceListenerThread, speak
-from core.cricket_scraper import CricketScraper
+class VitalsWorker(QThread):
+    vitals_ready = pyqtSignal(dict)
 
-class CricketWorker(QThread):
-    data_ready = pyqtSignal(object)
-    
-    def __init__(self, scraper, match_url=None, interval=1):
+    def __init__(self, interval=4):
         super().__init__()
-        self.scraper = scraper
-        self.match_url = match_url
         self.interval = interval
         self.running = True
-        self.last_ball = None
-        self.db = None # Will be set by app
 
     def run(self):
+        import psutil
+        import time
+        from datetime import datetime
+
+        try:
+            boot_time = datetime.fromtimestamp(psutil.boot_time())
+        except Exception:
+            boot_time = datetime.now()
+
         while self.running:
             try:
-                # 1. Fetch data based on mode
-                if self.match_url:
-                    data = self.scraper.scrape_match_data(self.match_url)
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory()
+                ram_pct = ram.percent
+                ram_used = round(ram.used / (1024 ** 3), 1)
+                ram_total = round(ram.total / (1024 ** 3), 1)
+
+                battery = psutil.sensors_battery()
+                bat_pct = battery.percent if battery else 100
+                bat_plugged = battery.power_plugged if battery else True
+
+                uptime_delta = datetime.now() - boot_time
+                hours, remainder = divmod(int(uptime_delta.total_seconds()), 3600)
+                minutes, seconds = divmod(remainder, 60)
+                if hours > 0:
+                    uptime_str = f"{hours}h {minutes}m"
                 else:
-                    data = self.scraper.get_all_live_scores()
+                    uptime_str = f"{minutes}m"
 
-                if data is not None:
-                    # 2. Persist to DB (if provided)
-                    if self.db:
-                        try:
-                            if isinstance(data, list):
-                                for m in data: self.db.save_live_match(m)
-                            elif isinstance(data, dict):
-                                self.db.save_live_match(data)
-                        except Exception as e:
-                            print(f"[CricketWorker DB ERR] {e}")
+                apps = []
+                seen_names = set()
+                for proc in psutil.process_iter(['name', 'memory_percent']):
+                    try:
+                        pname = proc.info['name']
+                        if not pname or pname.lower() in [
+                            'system idle process', 'system', 'registry', 'smss.exe', 'csrss.exe', 
+                            'wininit.exe', 'services.exe', 'lsass.exe', 'svchost.exe', 'fontdrvhost.exe', 
+                            'dwm.exe', 'spoolsv.exe', 'explorer.exe', 'taskhostw.exe', 'runtimebroker.exe',
+                            'searchindexer.exe', 'ctfmon.exe', 'securityhealthservice.exe', 'conhost.exe'
+                        ]:
+                            continue
+                        
+                        clean_name = pname.split('.exe')[0].title()
+                        if clean_name in seen_names:
+                            continue
+                            
+                        mem = proc.info['memory_percent'] or 0
+                        apps.append((clean_name, mem, pname.lower()))
+                        seen_names.add(clean_name)
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        pass
 
-                    # 3. Emit for UI Update
-                    self.data_ready.emit(data)
+                apps.sort(key=lambda x: x[1], reverse=True)
+                top_apps = [{"name": a[0], "raw_name": a[2]} for a in apps[:4]]
 
-                    # 4. Smart Voice Commentary (Throttle to 30s min between speaks)
-                    if self.match_url and isinstance(data, dict) and data.get('commentary'):
-                        current_ball = data['commentary'][0].get('over')
-                        if current_ball != self.last_ball:
-                            self.last_ball = current_ball
-                            comm_text = data['commentary'][0].get('text', '')
-                            if comm_text:
-                                speak(f"Update at {current_ball}: {comm_text}")
-                else:
-                    print("[CricketWorker] Scraping returned None (Timeout or Error)")
-                
+                data = {
+                    "cpu": cpu,
+                    "ram_pct": ram_pct,
+                    "ram_used": f"{ram_used} GB",
+                    "ram_total": f"{ram_total} GB",
+                    "battery_pct": bat_pct,
+                    "battery_plugged": bat_plugged,
+                    "uptime": uptime_str,
+                    "apps": top_apps
+                }
+                self.vitals_ready.emit(data)
             except Exception as e:
-                print(f"[CricketWorker CRITICAL ERR] {e}")
-            
-            # 5. Non-blocking sleep that checks self.running status
+                print(f"[VitalsWorker ERR] {e}")
+
             for _ in range(self.interval):
                 if not self.running: break
                 threading.Event().wait(1)
@@ -89,19 +115,6 @@ class WebBackend(QObject):
     @pyqtSlot()
     def trigger_voice(self):
         self.main_app.on_wake_word_button()
-
-    @pyqtSlot(str)
-    def start_live_cricket(self, match_url):
-        # Handle cases where match_url might be "null" string from JS or empty
-        m_url = str(match_url).strip()
-        if m_url.lower() in ["", "null", "undefined"]:
-            m_url = None
-        print(f"[WebBackend] Start live cricket requested for: {m_url or 'BATCH MODE'}")
-        self.main_app.start_cricket_feed(m_url)
-
-    @pyqtSlot()
-    def stop_live_cricket(self):
-        self.main_app.stop_cricket_feed()
 
 class NxoraApp(QMainWindow):
     def __init__(self):
@@ -150,9 +163,10 @@ class NxoraApp(QMainWindow):
         self.voice_thread = None
         self.continuous_listening = False
         
-        self.cricket_scraper = CricketScraper()
-        self.cricket_thread = None
-        self.current_match_context = ""
+        # Real-time System Vitals Monitoring
+        self.vitals_worker = VitalsWorker(interval=4)
+        self.vitals_worker.vitals_ready.connect(self.on_vitals_data)
+        self.vitals_worker.start()
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -216,8 +230,8 @@ class NxoraApp(QMainWindow):
         
         self.update_ui_status("Processing...", "processing")
         
-        # Pass match context to AI
-        threading.Thread(target=self.ai_worker.run_task, args=(text, self.current_match_context), daemon=True).start()
+        # Run task
+        threading.Thread(target=self.ai_worker.run_task, args=(text,), daemon=True).start()
         
     @safe_call
     def on_ai_response(self, text):
@@ -280,88 +294,12 @@ class NxoraApp(QMainWindow):
         except Exception as e:
             self.show_error(f"Wake word error: {str(e)}")
         
-    def start_cricket_feed(self, match_url=None):
-        print(f"[NxoraApp] Starting cricket feed. Match URL: {match_url or 'BATCH'}")
-        if self.cricket_thread and self.cricket_thread.isRunning():
-            print("[NxoraApp] Stopping existing cricket thread.")
-            self.stop_cricket_feed()
-
-        # match_url=None/"" triggers Batch Mode in CricketWorker
-        self.cricket_thread = CricketWorker(self.cricket_scraper, match_url, interval=2)
-        self.cricket_thread.db = self.db 
-        self.cricket_thread.data_ready.connect(self.on_cricket_data)
-        self.cricket_thread.start()
-        print(f"[NxoraApp] Cricket thread started: {self.cricket_thread.isRunning()}")
-        
-        mode = "Batch (All Matches)" if not match_url else "Single Match"
-        self.update_ui_status(f"Live Feed: {mode}", "online")
-        self.appendMessage("System", f"Live cricket feed started in {mode} mode.", "system")
-
-    def stop_cricket_feed(self):
-        if self.cricket_thread:
-            self.cricket_thread.stop()
-            self.cricket_thread.wait()
-            self.cricket_thread = None
-            self.appendMessage("System", "Live match scraping stopped.", "system")
-
-    @pyqtSlot(object)
-    @safe_call
-    def on_cricket_data(self, data):
-        """Handles incoming cricket data with high resilience."""
-        score = "0/0"
-        overs = "0"
-        comm = "Waiting for data..."
-        
-        try:
-            if data is None: return
-            
-            print(f"[NxoraApp] on_cricket_data received: {type(data)}")
-            
-            # Update UI via Javascript bridge
-            data_json = json.dumps(data)
-            script = None
-            
-            if isinstance(data, list):
-                script = f"if (typeof window.showAllMatches === 'function') {{ window.showAllMatches({data_json}); }} else {{ console.error('showAllMatches not found'); }}"
-            elif isinstance(data, dict) or hasattr(data, "get"):
-                script = f"if (typeof window.showIPLDashboard === 'function') {{ window.showIPLDashboard({data_json}); }} else {{ console.error('showIPLDashboard not found'); }}"
-                
-                # Build ultra-accurate context for AI
-                score = data.get('score') or "Live"
-                overs = data.get('overs') or "0"
-                if data.get('commentary') and len(data['commentary']) > 0:
-                    comm = data['commentary'][0].get('text', '')
-
-                batters_list = data.get('batters', [])
-                batters = ", ".join([f"{b.get('name', 'Unknown')} {b.get('runs', 0)}({b.get('balls', 0)})" for b in (batters_list if isinstance(batters_list, list) else [])])
-                
-                bowlers_list = data.get('bowlers', [])
-                bowlers = ", ".join([f"{b.get('name', 'Unknown')} {b.get('overs', 0)}-{b.get('runs', 0)}-{b.get('wickets', 0)}" for b in (bowlers_list if isinstance(bowlers_list, list) else [])])
-                
-                history_list = data.get('history', [])
-                history = ", ".join([str(h) for h in (history_list if isinstance(history_list, list) else [])])
-                
-                match_info = f"NEURAL MATCH STATE:\n"
-                match_info += f"Series State: {data.get('matchState', 'Live Action')}\n"
-                match_info += f"Match: {data.get('teamA', 'Unknown')} vs {data.get('teamB', 'Unknown')}\n"
-                match_info += f"Score: {score} ({overs} ov)\n"
-                match_info += f"RR: {data.get('runRate', '0.00')} | Req: {data.get('reqRunRate', 'N/A')}\n"
-                match_info += f"Partnership: {data.get('partnership', 'N/A')}\n"
-                match_info += f"Batting: {batters or 'N/A'}\n"
-                match_info += f"Bowling: {bowlers or 'N/A'}\n"
-                match_info += f"Visual Momentum: {history or '...'}\n"
-                match_info += f"Pulse (Latest): {comm}\n"
-                match_info += f"STYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary."
-                
-                self.current_match_context = match_info
-            
-            if script:
-                self.execute_js_command(script)
-                
-        except Exception as e:
-            print(f"[UI UPDATE ERR] Critical failure in on_cricket_data: {e}")
-            import traceback
-            traceback.print_exc()
+    @pyqtSlot(dict)
+    def on_vitals_data(self, data):
+        """Pushes system vitals and active apps data to UI."""
+        data_json = json.dumps(data)
+        script = f"if (typeof window.updateVitals === 'function') {{ window.updateVitals({data_json}); }}"
+        self.execute_js_command(script)
 
     def on_voice_heard(self, text):
         assistant_name = self.app_config.get('assistant_name', 'Nxora')
@@ -392,7 +330,9 @@ class NxoraApp(QMainWindow):
     def closeEvent(self, event):
         """Handle application closure gracefully."""
         print("[NxoraApp] Shutting down...")
-        self.stop_cricket_feed()
+        if hasattr(self, 'vitals_worker'):
+            self.vitals_worker.stop()
+            self.vitals_worker.wait()
         if hasattr(self, 'db'):
             self.db.close()
         event.accept()

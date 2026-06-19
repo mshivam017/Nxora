@@ -1,14 +1,6 @@
 [
   {
     "role": "user",
-    "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 144/2 (13.2/20 ov)\nRR: 10.8 | Req: 0\nPartnership: 51 Runs, 16 B (RR: 19.12)\nBatting: RM Patidar 23(8), D Padikkal 43(24)\nBowling: MJ Henry 2.2-0-0, S Dube 2-0-1\nVisual Momentum: 1, 6, 4, 4, 6, 1\nPulse (Latest): Henry to Patidar \u2014 slower bumper on off. Patidar hangs back before hacking it to deep mid wicket\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: Karya Karya"
-  },
-  {
-    "role": "assistant",
-    "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
-  },
-  {
-    "role": "user",
     "content": "[Real-Time Context: NEURAL MATCH STATE:\nSeries State: \nMatch: Royal Challengers Bengaluru vs Chennai Super Kings\nScore: 147/2 (13.3/20 ov)\nRR: 10.88 | Req: 0\nPartnership: 54 Runs, 17 B (RR: 19.05)\nBatting: D Padikkal 45(25), RM Patidar 23(8)\nBowling: MJ Henry 2.3-0-0, S Dube 2-0-1\nVisual Momentum: 4, 4, 6, 1, 2, 1w\nPulse (Latest): Henry to Padikkal \u2014 dug into the track on leg. Padikkal gets under it and the square leg umpire calls it a wide on height\nSTYLE: Professional cricket analyst, energetic, seductive, high-momentum commentary.]\n\nUser Question: dhanatmak"
   },
   {
@@ -78,5 +70,13 @@
   {
     "role": "assistant",
     "content": "I couldn't generate a response right now. Please check that a model file is available in the /models folder."
+  },
+  {
+    "role": "user",
+    "content": "nexora"
+  },
+  {
+    "role": "assistant",
+    "content": "I couldn't generate a response right now. Please check your internet connection or ensure a local model file is in the /models folder."
   }
 ]

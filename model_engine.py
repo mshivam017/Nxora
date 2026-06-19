@@ -271,29 +271,34 @@ class HFBackend:
 
 class GeminiBackend:
     def __init__(self, api_key, model_name):
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        self._model = genai.GenerativeModel(model_name)
+        from google import genai
+        self._client = genai.Client(api_key=api_key)
         self._model_name = model_name
-        print(f"[Engine] Gemini fallback ready ({model_name}).")
+        print(f"[Engine] Gemini direct backend ready ({model_name}).")
 
     def generate(self, messages, max_tokens, temperature):
-        history = []
-        system_text = ""
+        from google.genai import types
+        contents = []
+        system_instruction = None
         for m in messages:
-            if m["role"] == "system":
-                system_text = m["content"]
-            elif m["role"] == "user":
-                history.append({"role": "user", "parts": [m["content"]]})
-            elif m["role"] == "assistant":
-                history.append({"role": "model", "parts": [m["content"]]})
-        if system_text and history and history[0]["role"] == "user":
-            history[0]["parts"][0] = f"{system_text}\n\n{history[0]['parts'][0]}"
-        chat = self._model.start_chat(history=history[:-1] if len(history) > 1 else [])
-        last_msg = history[-1]["parts"][0] if history else ""
-        resp = chat.send_message(
-            last_msg,
-            generation_config={"max_output_tokens": max_tokens, "temperature": temperature}
+            role = m["role"]
+            content = m["content"]
+            if role == "system":
+                system_instruction = content
+            elif role == "user":
+                contents.append(types.Content(role="user", parts=[types.Part.from_text(text=content)]))
+            elif role == "assistant":
+                contents.append(types.Content(role="model", parts=[types.Part.from_text(text=content)]))
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+        )
+        resp = self._client.models.generate_content(
+            model=self._model_name,
+            contents=contents,
+            config=config,
         )
         return resp.text.strip()
 
@@ -323,8 +328,14 @@ class NxoraAIEngine:
         self._gemini = None
         self._lock = threading.Lock()
         self._backend = "none"
-        self._init_local(progress_cb)
+        self._progress_cb = progress_cb
+        
+        # Initialize Gemini first to be lightweight and fast
         self._init_gemini()
+        if self._gemini:
+            self._backend = f"gemini:{self.cfg.get('gemini_model', 'gemini-1.5-flash')}"
+        else:
+            self._init_local(progress_cb)
 
     def _init_local(self, progress_cb=None):
         ram = available_ram_gb()
@@ -429,28 +440,36 @@ class NxoraAIEngine:
         confidence = 0.0
         used_gemini = False
 
-        if self._local:
+        # Try Gemini first if available (high-performance & lightweight routing)
+        if self._gemini:
             try:
-                raw, confidence = self._local.generate(messages, max_tk, temp, stream_cb)
-                response = clean_response(raw)
-            except Exception as e:
-                print(f"[Engine] Local inference error: {e}")
-                traceback.print_exc()
-
-        if (response is None or confidence < thresh) and self._gemini:
-            print(f"[Engine] Confidence {confidence:.2f} < {thresh} -> Gemini fallback")
-            try:
+                print("[Engine] Routing query directly to Gemini...")
                 g = self._gemini.generate(messages, max_tk, temp)
                 if g:
                     response = g
                     used_gemini = True
             except Exception as e:
                 print(f"[Engine] Gemini error: {e}")
+                # If Gemini fails, lazily load local backend if not loaded
+                if not self._local:
+                    self._init_local(self._progress_cb)
+
+        # Fallback to local if Gemini was not available or failed
+        if not response:
+            if not self._local:
+                self._init_local(self._progress_cb)
+            if self._local:
+                try:
+                    raw, confidence = self._local.generate(messages, max_tk, temp, stream_cb)
+                    response = clean_response(raw)
+                except Exception as e:
+                    print(f"[Engine] Local inference error: {e}")
+                    traceback.print_exc()
 
         if not response:
             response = (
                 "I couldn't generate a response right now. "
-                "Please check that a model file is available in the /models folder."
+                "Please check your internet connection or ensure a local model file is in the /models folder."
             )
 
         if use_memory:
