@@ -101,10 +101,22 @@ You can write or say commands to Nxora! Here are a few capabilities:
 
 ## 📷 App Preview & Screenshots
 
-The application includes high-quality screenshots showcasing different states of the interface in the `Screenshots` directory:
-- **Standby Screen (Dark Mode):** `Screenshots/01_standby_dark.png` - Showing the cinematic glass dark theme, sidebar, quick action shortcuts, and system engine vitals.
-- **AI Model Response:** `Screenshots/02_response_dark.png` - Showing user query input and response layout rendered in the chat feed.
-- **Light Theme:** `Screenshots/03_light_theme.png` - Showing the light-theme alternative layout.
+Here is a preview of the Nxora AI desktop assistant in action:
+
+### 1. Standby Screen (Dark Mode)
+*Showing the cinematic glass dark theme, sidebar, quick action shortcuts, and system engine vitals.*
+
+![Standby Screen (Dark Mode)](Screenshots/01_standby_dark.png)
+
+### 2. AI Model Response (Dark Mode)
+*Showing the user's conversational query and the model's intelligent response.*
+
+![AI Model Response (Dark Mode)](Screenshots/02_response_dark.png)
+
+### 3. Light Theme
+*Showing the alternative clean Light theme.*
+
+![Light Theme](Screenshots/03_light_theme.png)
 
 ---
 
