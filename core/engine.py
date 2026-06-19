@@ -1,6 +1,5 @@
 import datetime
 import webbrowser
-import wikipedia
 import requests
 import re
 import os
@@ -8,16 +7,12 @@ import time
 import pyautogui
 import psutil
 import pygetwindow as gw
-import pytesseract
-import speedtest
 import subprocess
 import fnmatch
 import pyperclip
 import urllib.request
 import urllib.parse
 import ctypes
-from PIL import Image
-import fitz
 from google import genai
 from PyQt5.QtCore import QThread, pyqtSignal
 from functools import wraps
@@ -137,6 +132,10 @@ class AIWorker(QThread):
 
         # --- 2. INTENT ROUTING ---
         
+        # Priority 0: Check Workspace Code Intelligence
+        response = self._handle_workspace_intelligence(user_input_lower, user_input)
+        if response is not None: return response
+
         # Priority 1: Check Web & Browser Capabilities Strings
         response = self._handle_web_automation(user_input_lower)
         if response: return response
@@ -167,6 +166,178 @@ class AIWorker(QThread):
     # ==========================================
     # CAPABILITY MODULES (Refactored for efficiency)
     # ==========================================
+
+    def _handle_workspace_intelligence(self, query, original_query):
+        # 1. Scan workspace
+        if any(cmd in query for cmd in ["scan workspace", "list workspace", "show files in workspace", "list files in workspace", "list project files"]):
+            return self._scan_workspace()
+            
+        # 2. Explain file
+        explain_match = re.search(r"\b(?:explain\s+file|explain|summarize\s+file|summarize|analyze\s+file|analyze)\s+([a-zA-Z0-9_\-\.\/\\:]+)", query)
+        if explain_match:
+            filename = explain_match.group(1).strip()
+            exists = False
+            target_file = filename
+            workspace_dir = os.getcwd()
+            
+            for f in [filename, filename + ".py", filename + ".json", filename + ".html", filename + ".css", filename + ".md"]:
+                full_path = os.path.join(workspace_dir, f)
+                if os.path.exists(full_path) and os.path.isfile(full_path):
+                    exists = True
+                    target_file = f
+                    break
+                    
+            if exists:
+                return self._explain_file(target_file)
+                
+        # 3. Search code
+        search_match = re.search(r"\b(?:search\s+code|search\s+workspace|search\s+text|find\s+code|find\s+text)\s+(.+)", original_query, re.IGNORECASE)
+        if search_match:
+            search_query = search_match.group(1).strip()
+            return self._search_code(search_query)
+            
+        return None
+
+    def _scan_workspace(self):
+        try:
+            workspace_dir = os.getcwd()
+            ignore_dirs = {'.git', 'venv', '__pycache__', '.system_generated', 'node_modules', 'dist', 'build'}
+            ignore_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.pyc', '.db', '.pdf', '.exe', '.dll', '.so', '.dylib', '.zip', '.tar', '.gz', '.mp3', '.mp4', '.wav'}
+            
+            found_files = []
+            for root, dirs, files in os.walk(workspace_dir):
+                dirs[:] = [d for d in dirs if d not in ignore_dirs and not d.startswith('.')]
+                
+                for file in files:
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in ignore_extensions or file.startswith('.'):
+                        continue
+                    
+                    rel_path = os.path.relpath(os.path.join(root, file), workspace_dir)
+                    rel_path = rel_path.replace('\\', '/')
+                    found_files.append(rel_path)
+            
+            if not found_files:
+                return "Boss, I scanned the workspace but found no matching text/code files."
+                
+            count = len(found_files)
+            displayed_files = found_files[:30]
+            file_list_str = "\n".join([f"- `{f}`" for f in displayed_files])
+            
+            res = f"Boss, I scanned the workspace directory: `{workspace_dir}`.\nFound {count} code/text files. Here are the top files:\n{file_list_str}"
+            if count > 30:
+                res += f"\n\n... and {count - 30} more files."
+            return res
+        except Exception as e:
+            return f"Boss, I encountered an error scanning the workspace: {str(e)}"
+
+    def _explain_file(self, filename):
+        workspace_dir = os.getcwd()
+        filename_clean = filename.strip().strip('"').strip("'").replace('\\', '/')
+        file_path = os.path.join(workspace_dir, filename_clean)
+        
+        abs_file_path = os.path.abspath(file_path)
+        if not abs_file_path.startswith(os.path.abspath(workspace_dir)):
+            return "Boss, for security reasons I can only explain files inside the project workspace."
+            
+        if not os.path.exists(abs_file_path) or not os.path.isfile(abs_file_path):
+            return f"Boss, I couldn't find a file named '{filename_clean}' in the workspace directory."
+            
+        try:
+            sz = os.path.getsize(abs_file_path)
+            if sz > 500 * 1024:
+                return f"Boss, '{filename_clean}' is too large ({round(sz/1024, 1)} KB). I can only explain files smaller than 500 KB."
+                
+            with open(abs_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+        except Exception as e:
+            return f"Boss, I failed to read the file '{filename_clean}': {str(e)}"
+            
+        def run_explain():
+            try:
+                if hasattr(self, 'gemini_client') and self.gemini_client:
+                    prompt = (
+                        f"Analyze the following code file named '{filename_clean}' in the project workspace. "
+                        f"Provide a concise, high-quality, and structured summary explaining what it does, "
+                        f"its main classes/functions/components, and any key patterns/technologies used.\n\n"
+                        f"File content:\n```\n{content}\n```"
+                    )
+                    resp = self.gemini_client.models.generate_content(
+                        model='gemini-2.5-flash', contents=prompt
+                    )
+                    explanation = resp.text.strip()
+                    self.response_ready.emit(f"Boss, here is the analysis for `{filename_clean}`:\n\n{explanation}")
+                    return
+                
+                if hasattr(self, 'nxora_engine') and self.nxora_engine:
+                    prompt = (
+                        f"Summarize the code in this file named '{filename_clean}':\n\n{content[:2000]}"
+                    )
+                    reply = self.nxora_engine.chat(prompt, use_memory=False)
+                    if reply:
+                        self.response_ready.emit(f"Boss, here is the summary for `{filename_clean}`:\n\n{reply}")
+                        return
+                        
+                self.response_ready.emit("Boss, I couldn't connect to any AI model to explain the file.")
+            except Exception as e:
+                self.response_ready.emit(f"Boss, I encountered an error explaining the file: {str(e)}")
+                
+        import threading
+        threading.Thread(target=run_explain, daemon=True).start()
+        return f"Boss, let me analyze and explain the file `{filename_clean}` for you..."
+
+    def _search_code(self, query):
+        if not query:
+            return "Boss, please specify a search term or query."
+            
+        try:
+            workspace_dir = os.getcwd()
+            ignore_dirs = {'.git', 'venv', '__pycache__', '.system_generated', 'node_modules', 'dist', 'build'}
+            ignore_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.pyc', '.db', '.pdf', '.exe', '.dll', '.so', '.dylib', '.zip', '.tar', '.gz', '.mp3', '.mp4', '.wav'}
+            
+            matches = []
+            for root, dirs, files in os.walk(workspace_dir):
+                dirs[:] = [d for d in dirs if d not in ignore_dirs and not d.startswith('.')]
+                
+                for file in files:
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in ignore_extensions or file.startswith('.'):
+                        continue
+                        
+                    file_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(file_path, workspace_dir).replace('\\', '/')
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            for idx, line in enumerate(f, 1):
+                                if query.lower() in line.lower():
+                                    matches.append((rel_path, idx, line.strip()))
+                                    if len(matches) >= 50:
+                                        break
+                    except Exception:
+                        pass
+                        
+                    if len(matches) >= 50:
+                        break
+                        
+            if not matches:
+                return f"Boss, I searched for '{query}' across the workspace but found no matching lines of code."
+                
+            count = len(matches)
+            displayed_matches = matches[:15]
+            
+            match_str = ""
+            for rel_path, line_num, content in displayed_matches:
+                if len(content) > 120:
+                    content = content[:117] + "..."
+                match_str += f"- `{rel_path}` (Line {line_num}): `{content}`\n"
+                
+            res = f"Boss, I searched the workspace for query '{query}' and found {count} match(es).\nHere are the top matches:\n{match_str}"
+            if count > 15:
+                res += f"\n... and {count - 15} more matches."
+            return res
+        except Exception as e:
+            return f"Boss, I encountered an error searching code: {str(e)}"
 
     def _handle_core_information(self, query, extra_context=None):
         if "time" in query and ("what" in query or "tell" in query or "is it" in query or "current" in query):
@@ -294,39 +465,6 @@ Would you like me to dive deeper into how that new variable aperture camera work
         if "final message" in query or ("message" in query and ("viewer" in query or "human" in query)):
             return "Message to humans: Do not fear AI. Learn it. Build with it. Control it. The future will belong to those who understand technology."
             
-        if "cricket" in query and ("score" in query or "update" in query or "live" in query):
-            ctx = extra_context
-            if not ctx:
-                # Try to load from DB for persistence
-                latest = self.db.get_latest_matches()
-                if latest:
-                    ctx = f"Latest scores from memory: " + ", ".join([f"{m['teamA']} {m['scoreA']} ({m['status']})" for m in latest[:3]])
-            
-            if ctx:
-                if "CURRENT MATCH STATE:" in ctx:
-                    # Enrich the response using the local AI to make it sounds professional
-                    def synthesize_cricket():
-                        try:
-                            prompt = [
-                                {"role": "system", "content": "You are Nxora, a professional sports analyst. Use the provided match state to give a brief, exciting, and accurate update to the Boss. Mention the score, overs, top performers (batters/bowlers), and the recent trend or last balls. Be concise but insightful. Use emojis."},
-                                {"role": "user", "content": f"Match Data:\n{ctx}\nUser Inquiry: {query}"}
-                            ]
-                            if self.is_offline_ready:
-                                res = self.generator(prompt, max_new_tokens=200, do_sample=True, temperature=0.7)
-                                report = res[0]["generated_text"][-1]["content"].strip()
-                                self.response_ready.emit(f"Boss, {report}")
-                            else:
-                                self.response_ready.emit(f"Boss, here is the state: {ctx}")
-                        except Exception as e:
-                            self.response_ready.emit(f"Boss, here is the latest update: {ctx}")
-                    
-                    import threading
-                    threading.Thread(target=synthesize_cricket, daemon=True).start()
-                    return "Boss, let me analyze the latest neural feed for you..."
-                
-                return f"Boss, here is the latest update: {ctx}"
-            return "Boss, I don't see an active live feed right now. Please click 'Live Match' or tell me to start the feed."
-            
         if "weather" in query:
             def fetch_weather():
                 try:
@@ -427,6 +565,7 @@ Would you like me to dive deeper into how that new variable aperture camera work
             
             if search_query:
                 def fetch_wiki():
+                    import wikipedia
                     try:
                         # Grab raw summary from wiki (auto_suggest=False prevents many PageErrors)
                         try:
@@ -1000,6 +1139,7 @@ Would you like me to dive deeper into how that new variable aperture camera work
 
         if "read my screen" in query or "on my screen" in query or "read screen" in query or "what does my screen say" in query:
             try:
+                import pytesseract
                 # Dynamic Tesseract Path Resolution
                 tesseract_paths = [
                     r'C:\Program Files\Tesseract-OCR\tesseract.exe',
@@ -1044,6 +1184,7 @@ Would you like me to dive deeper into how that new variable aperture camera work
 
         if "internet speed" in query or "speed test" in query or "network speed" in query:
             try:
+                import speedtest
                 self.response_ready.emit("Boss, running a network speed test. This may take a minute...")
                 st = speedtest.Speedtest()
                 st.get_best_server()
@@ -1151,6 +1292,7 @@ Memory: {self.memory[-150:] if self.memory else "None"}"""
             
         def analyze_pdf():
             try:
+                import fitz
                 self.response_ready.emit("Boss, opening and reading the document now...")
                 doc = fitz.open(filepath)
                 text = ""
@@ -1290,24 +1432,173 @@ Memory: {self.memory[-150:] if self.memory else "None"}"""
 
     def _create_holi_website(self, query):
         """
-        Reads the rich Holi festival page from help-data/holi-web/index.html,
+        Generates a rich, interactive Holi festival greeting page dynamically,
         opens it in Notepad, saves it to holi-web/index.html, and launches it in Chrome.
         """
         open_in_chrome = any(kw in query for kw in ["chrome", "browser", "run", "open"])
-
-        # === Load HTML from help-data folder ===
-        # Path is relative to the project root (where main.py lives)
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        source_path = os.path.join(base_dir, "help-data", "holi-web", "index.html")
 
-        if not os.path.exists(source_path):
-            return f"Boss, I couldn't find the Holi template at '{source_path}'. Please make sure help-data/holi-web/index.html exists."
-
-        try:
-            with open(source_path, "r", encoding="utf-8") as f:
-                HOLI_HTML = f.read()
-        except Exception as read_err:
-            return f"Boss, failed to read the Holi template: {read_err}"
+        # Beautiful inline Holi template to eliminate hardcoded help-data folder
+        HOLI_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Holi — Festival of Colors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #090a15;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 40px;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        .rainbow-text {
+            background: linear-gradient(90deg, #ff2a75, #ff6a00, #ffd600, #00e676, #00b0ff, #aa00ff);
+            background-size: 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: flow 10s linear infinite;
+        }
+        @keyframes flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        p {
+            font-size: 1.1rem;
+            color: #a0a5c0;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .color-palette {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .color-ball {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .color-ball:hover {
+            transform: scale(1.15) translateY(-3px);
+        }
+        .btn {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ff2a75, #ff6a00);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(255, 42, 117, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255, 42, 117, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="container">
+        <h1 class="rainbow-text">Happy Holi!</h1>
+        <p>Celebrate the festival of colors, love, and new beginnings. Click the color balls below or click anywhere on the screen to splash colors and spread joy!</p>
+        <div class="color-palette">
+            <div class="color-ball" style="background:#ff2a75; box-shadow:0 0 15px rgba(255,42,117,0.4);" onclick="setSplashColor('#ff2a75')"></div>
+            <div class="color-ball" style="background:#ff6a00; box-shadow:0 0 15px rgba(255,106,0,0.4);" onclick="setSplashColor('#ff6a00')"></div>
+            <div class="color-ball" style="background:#ffd600; box-shadow:0 0 15px rgba(255,214,0,0.4);" onclick="setSplashColor('#ffd600')"></div>
+            <div class="color-ball" style="background:#00e676; box-shadow:0 0 15px rgba(0,230,118,0.4);" onclick="setSplashColor('#00e676')"></div>
+            <div class="color-ball" style="background:#00b0ff; box-shadow:0 0 15px rgba(0,176,255,0.4);" onclick="setSplashColor('#00b0ff')"></div>
+            <div class="color-ball" style="background:#aa00ff; box-shadow:0 0 15px rgba(170,0,255,0.4);" onclick="setSplashColor('#aa00ff')"></div>
+        </div>
+        <button class="btn" onclick="randomSplash()"><i class="fa-solid fa-spray-can"></i> Random Splash</button>
+    </div>
+    <script>
+        let currentColor = '#ff2a75';
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+        function setSplashColor(color) {
+            currentColor = color;
+            createSplash(window.innerWidth / 2, window.innerHeight / 2 + 100, 150, color);
+        }
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('.container')) return;
+            createSplash(e.clientX, e.clientY, 80 + Math.random() * 80, currentColor);
+        });
+        function randomSplash() {
+            const colors = ['#ff2a75', '#ff6a00', '#ffd600', '#00e676', '#00b0ff', '#aa00ff'];
+            currentColor = colors[Math.floor(Math.random() * colors.length)];
+            createSplash(Math.random() * window.innerWidth, Math.random() * window.innerHeight, 100 + Math.random() * 120, currentColor);
+        }
+        function createSplash(x, y, radius, color) {
+            const numParticles = 25;
+            for (let i = 0; i < numParticles; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * radius;
+                const px = x + Math.cos(angle) * dist;
+                const py = y + Math.sin(angle) * dist;
+                const size = 5 + Math.random() * (radius / 5);
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(px, py, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    </script>
+</body>
+</html>"""
 
         try:
             holi_dir = os.path.join(base_dir, "holi-web")
@@ -1593,7 +1884,7 @@ window.addEventListener('scroll',()=>{{
                 try:
                     prompt = (
                         "You are Nxora, a highly intelligent AI assistant created by your boss Shivam. "
-                        "You have access to real-time system/match context provided in brackets.\n"
+                        "You have access to real-time system/vitals context provided in brackets.\n"
                         "Answer the following question in exactly ONE short, conversational sentence. Do not ramble.\n\n"
                         f"Context: {extra_context if extra_context else 'None'}\n"
                         f"Question: {query}"

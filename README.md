@@ -95,6 +95,18 @@ You can write or say commands to Nxora! Here are a few capabilities:
 - `"Who is [person]"` or `"Tell me about [topic]"`
 - `"What is the weather today?"`
 - `"Live cricket score"` (Starts the Background live scraper thread)
+- `"Create a Holi website"` (Generates a dynamic, colorful, interactive festival greeting page entirely offline).
+
+---
+
+## 📷 App Preview & Screenshots
+
+The application includes high-quality screenshots showcasing different states of the interface in the `Screenshots` directory:
+- **Standby Screen (Dark Mode):** `Screenshots/01_standby_dark.png` - Showing the cinematic glass dark theme, sidebar, quick action shortcuts, and system engine vitals.
+- **AI Model Response:** `Screenshots/02_response_dark.png` - Showing user query input and response layout rendered in the chat feed.
+- **Light Theme:** `Screenshots/03_light_theme.png` - Showing the light-theme alternative layout.
+
+---
 
 ## 🗃 File Architecture
 - `main.py` - Core entry point. Initializes databases, audio channels, and the PyQt5 GUI.
@@ -102,3 +114,4 @@ You can write or say commands to Nxora! Here are a few capabilities:
 - `core/` - The central scripts logic (`engine.py` logic, `cricket_scraper.py`, `database.py`, `audio.py`).
 - `ui/` - The HTML/CSS/JS frontend files running inside the WebEngine renderer.
 - `api/` - Mobile bridging scripts and REST endpoints.
+- `Screenshots/` - Visual previews of the application in action.
